@@ -1,0 +1,343 @@
+DanteDomain-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE, Unsigned32
+		FROM SNMPv2-SMI
+	MODULE-COMPLIANCE, OBJECT-GROUP
+		FROM SNMPv2-CONF
+	TEXTUAL-CONVENTION, DateAndTime
+		FROM SNMPv2-TC
+	dante, DanteVersion
+		FROM Audinate-MIB
+	;
+
+danteDomain MODULE-IDENTITY
+	LAST-UPDATED "201712120000Z"	-- 12 Dec 2017
+	ORGANIZATION
+		"Audinate Pty Ltd
+		http://audinate.com/"
+	CONTACT-INFO "iana-snmp-pen@audinate.com"
+	DESCRIPTION "Monitoring functions for Audinate Dante Domain Manager"
+	REVISION "201712120000Z"	-- 12 Dec 2017
+	DESCRIPTION "Initial revision"
+	::= { dante 2 }
+
+
+-- types
+
+DanteDomainMgrStatusTC ::= TEXTUAL-CONVENTION
+	STATUS	current
+	DESCRIPTION "Service status code"
+	SYNTAX INTEGER
+	{
+		running(1),
+		error(2),
+		inactive(3)
+	}
+
+DanteDomainHANodeRoleTC ::= TEXTUAL-CONVENTION
+	STATUS	current
+	DESCRIPTION "HA node role code"
+	SYNTAX INTEGER
+	{
+		active(1),
+		auxillary(2),
+		arbiter(3),
+		unknown(4)
+	}
+
+DanteDomainHANodeStateTC ::= TEXTUAL-CONVENTION
+	STATUS	current
+	DESCRIPTION "HA node state code"
+	SYNTAX INTEGER
+	{
+		healthy(1),
+		synchronizing(2),
+		down(3),
+		errors(4)
+	}
+
+-- top level object structure
+
+danteDomainNotifications OBJECT IDENTIFIER	::= { danteDomain 2 }
+danteDomainNotificationPrefix OBJECT IDENTIFIER	::= { danteDomainNotifications 0 }
+
+danteDomainMgr	OBJECT IDENTIFIER	::= { danteDomain 3 }
+danteDomainMgrStatus	OBJECT IDENTIFIER	::= { danteDomain 4 }
+danteDomainDomainStatus	OBJECT IDENTIFIER	::= { danteDomain 5 }
+
+
+-- dante domain manager objects
+
+danteDomainMgrVersions OBJECT IDENTIFIER ::= { danteDomainMgr 1 }
+
+danteDomainMgrVersion OBJECT-TYPE
+	SYNTAX DanteVersion
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Current version of domain manager"
+	::= { danteDomainMgrVersions 1 }
+
+danteDomainMgrVersionAvailable OBJECT-TYPE
+	SYNTAX DanteVersion
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Latest available version of domain manager"
+	::= { danteDomainMgrVersions 2 }
+
+danteDomainMgrLicense	OBJECT IDENTIFIER ::= { danteDomainMgr 2 }
+
+danteDomainMgrLicenseDesc OBJECT-TYPE
+	SYNTAX OCTET STRING
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM License description"
+	::= { danteDomainMgrLicense 1 }
+
+danteDomainMgrLicenseExpiry OBJECT-TYPE
+	SYNTAX DateAndTime
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM License expiry"
+	::= { danteDomainMgrLicense 2 }
+
+danteDomainMgrTlsCertificate	OBJECT IDENTIFIER ::= { danteDomainMgr 3 }
+
+danteDomainMgrTlsExpiry OBJECT-TYPE
+	SYNTAX DateAndTime
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM TLS certificate expiry"
+	::= { danteDomainMgrTlsCertificate 2 }
+
+-- dante domain manager service status objects
+
+danteDomainMgrStatusInt OBJECT IDENTIFIER ::= { danteDomainMgrStatus 1 }
+danteDomainMgrStatusExt OBJECT IDENTIFIER ::= { danteDomainMgrStatus 2 }
+
+danteDomainMgrStatusDevMgr OBJECT-TYPE
+	SYNTAX DanteDomainMgrStatusTC
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM device manager status"
+	::= { danteDomainMgrStatusInt 1 }
+
+danteDomainMgrStatusDiscovery OBJECT-TYPE
+	SYNTAX DanteDomainMgrStatusTC
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM discovery service status"
+	::= { danteDomainMgrStatusInt 2 }
+
+danteDomainMgrStatusHA OBJECT IDENTIFIER ::= { danteDomainMgrStatusInt 3 }
+
+danteDomainMgrStatusHATimeout OBJECT-TYPE
+	SYNTAX DateAndTime
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM HA only node timeout - TBD"
+	::= { danteDomainMgrStatusHA 1 }
+
+	-- HA table at end of this section
+
+danteDomainMgrStatusSmtp OBJECT-TYPE
+	SYNTAX DanteDomainMgrStatusTC
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM SMTP status"
+	::= { danteDomainMgrStatusExt 1 }
+
+danteDomainMgrStatusLdap OBJECT-TYPE
+	SYNTAX DanteDomainMgrStatusTC
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "DDM LDAP status"
+	::= { danteDomainMgrStatusExt 2 }
+
+danteDomainMgrStatusNotification NOTIFICATION-TYPE
+	STATUS current
+	DESCRIPTION "Change in status"
+	::= { danteDomainNotificationPrefix 4 }
+
+
+-- HA node table
+
+danteDomainHANodeTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF DanteDomainHANodeTableEntrySeq
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION "HA node status table"
+	::= { danteDomainMgrStatusHA 2 }
+
+danteDomainHANodeTableEntry OBJECT-TYPE
+	SYNTAX DanteDomainHANodeTableEntrySeq
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION "Row describing the status of a HA node"
+	INDEX { danteDomainHANodeId }
+	::= { danteDomainHANodeTable 1 }
+
+DanteDomainHANodeTableEntrySeq ::= SEQUENCE {
+	danteDomainHANodeId Unsigned32,
+	danteDomainHANodeHostname OCTET STRING,
+	danteDomainHANodeRole DanteDomainHANodeRoleTC,
+	danteDomainHANodeState DanteDomainHANodeStateTC
+}
+
+danteDomainHANodeId OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Id of this node"
+	::= { danteDomainHANodeTableEntry 1 }
+
+danteDomainHANodeHostname OBJECT-TYPE
+	SYNTAX OCTET STRING (SIZE(1..32))
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Name of this node"
+	::= { danteDomainHANodeTableEntry 2 }
+
+danteDomainHANodeRole OBJECT-TYPE
+	SYNTAX DanteDomainHANodeRoleTC
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Role of this node"
+	::= { danteDomainHANodeTableEntry 3 }
+
+danteDomainHANodeState OBJECT-TYPE
+	SYNTAX DanteDomainHANodeStateTC
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "State of this node"
+	::= { danteDomainHANodeTableEntry 4 }
+
+-- dante domain manager domain status
+
+-- domain status is represented as a table of domains
+-- the table is indexed by domain ID
+-- each row contains:
+--	domain name
+--	number of devices enrolled
+--	number of devices offline
+--	number of devices in error
+
+danteDomainStatusTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF DanteDomainStatusTableEntrySeq
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION "Domain status table"
+	::= { danteDomainDomainStatus 1 }
+
+danteDomainStatusTableEntry OBJECT-TYPE
+	SYNTAX DanteDomainStatusTableEntrySeq
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION "Row describing the status of a single domain"
+	INDEX { danteDomainStatusDomainId }
+	::= { danteDomainStatusTable 1 }
+
+DanteDomainStatusTableEntrySeq ::= SEQUENCE {
+	danteDomainStatusDomainId Unsigned32,
+	danteDomainStatusDomainName OCTET STRING,
+	danteDomainStatusNumEnrolled Unsigned32,
+	danteDomainStatusNumOffline Unsigned32,
+	danteDomainStatusNumNameConflict Unsigned32,
+	danteDomainStatusNumLatencyErr Unsigned32,
+	danteDomainStatusNumLatencyWarn Unsigned32,
+	danteDomainStatusNumClockErr Unsigned32,
+	danteDomainStatusNumClockWarn Unsigned32,
+	danteDomainStatusNumSubscriptionErr Unsigned32,
+	danteDomainStatusNumSubscriptionWarn Unsigned32
+}
+
+danteDomainStatusDomainId OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Id of this domain"
+	::= { danteDomainStatusTableEntry 1 }
+
+danteDomainStatusDomainName OBJECT-TYPE
+	SYNTAX OCTET STRING (SIZE(1..32))
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Name of this domain"
+	::= { danteDomainStatusTableEntry 2 }
+
+danteDomainStatusNumEnrolled OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Count of devices enrolled in this domain"
+	::= { danteDomainStatusTableEntry 3 }
+
+danteDomainStatusNumOffline OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION "Count of devices enrolled in this domain that are currently offline"
+	::= { danteDomainStatusTableEntry 4 }
+
+danteDomainStatusNumNameConflict OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Count of devices enrolled in this domain that have name conflict"
+	::= { danteDomainStatusTableEntry 5 }
+
+danteDomainStatusNumLatencyErr OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Count of devices enrolled in this domain with latency errors"
+	::= { danteDomainStatusTableEntry 6 }
+
+danteDomainStatusNumLatencyWarn OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Count of devices enrolled in this domain with latency warnings"
+	::= { danteDomainStatusTableEntry 7 }
+
+danteDomainStatusNumClockErr OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Count of devices enrolled in this domain with clock errors"
+	::= { danteDomainStatusTableEntry 8 }
+
+danteDomainStatusNumClockWarn OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Count of devices enrolled in this domain with clock warnings"
+	::= { danteDomainStatusTableEntry 9 }
+
+danteDomainStatusNumSubscriptionErr OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Count of devices enrolled in this domain with subscription errors"
+	::= { danteDomainStatusTableEntry 10 }
+
+danteDomainStatusNumSubscriptionWarn OBJECT-TYPE
+	SYNTAX Unsigned32
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Count of devices enrolled in this domain with subscription warnings"
+	::= { danteDomainStatusTableEntry 11 }
+
+danteDomainStatusNotification NOTIFICATION-TYPE
+	STATUS current
+	DESCRIPTION "Change in status for one or more domains"
+	::= { danteDomainNotificationPrefix 5 }
+
+END

@@ -1,0 +1,40 @@
+Audinate-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	MODULE-IDENTITY, enterprises
+		FROM SNMPv2-SMI
+	TEXTUAL-CONVENTION
+		FROM SNMPv2-TC
+	;
+
+audinate MODULE-IDENTITY
+	LAST-UPDATED "201712050000Z"	-- 05 Dec 2017
+	ORGANIZATION
+		"Audinate Pty Ltd
+		http://audinate.com/"
+	CONTACT-INFO "iana-snmp-pen@audinate.com"
+	DESCRIPTION "Master registry for Audinate SNMP paths"
+
+	REVISION "201712050000Z"	-- 05 Dec 2017
+	DESCRIPTION "Added DanteVersion"
+
+	REVISION "201711220000Z"	-- 22 Nov 2017
+	DESCRIPTION "Initial revision"
+
+	::= { enterprises 31682 }
+
+
+-- types
+
+DanteVersion ::= TEXTUAL-CONVENTION
+	DISPLAY-HINT "1d.1d.2d.2d"
+	STATUS current
+	DESCRIPTION "Represents a Dante version"
+	SYNTAX OCTET STRING (SIZE (4..6))
+
+
+-- Subgroups
+
+dante	OBJECT IDENTIFIER ::= { audinate 3 }
+
+END
