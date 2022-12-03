@@ -169,13 +169,14 @@ check_HA () {
          STATE=$STATE_WARNING
          # Just a warning, because if SNMP is answering, means at least 1 device is running
          PERF="$PERF $ROLE=0,"
+       else
+         PERF="$PERF $ROLE=1,"
        fi
        STATUS="$STATUS [$ROLE $NAME $ST]"
-       PERF="$PERF $ROLE=1,"
     done
     if [ $STATE -eq $STATE_WARNING ]
     then
-        echo "WARNING: $STATUS"
+        echo "WARNING: $STATUS | $PERF"
         exit $STATE_WARNING
     fi
     echo "OK: $STATUS | $PERF"
@@ -269,8 +270,8 @@ ERROR="OK"
 
 SCRIPT_DIR="$( dirname -- "${BASH_SOURCE[0]}"; )";
 SCRIPT_DIR="$( realpath -e -- "$SCRIPT_DIR"; )";
-MIBS=+Audinate-MIB:DanteDomain-MIB
-MIBDIRS=+$SCRIPT_DIR
+export MIBS=+Audinate-MIB:DanteDomain-MIB
+export MIBDIRS=+$SCRIPT_DIR
 
 print_usage() {
 	echo "Usage: $0 -H host -C community [ -s | -h | -d DOMAIN ]"
